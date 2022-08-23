@@ -10,7 +10,7 @@ import "../libraries/utils/ReentrancyGuard.sol";
 import "../tokens/interfaces/IMintable.sol";
 import "../access/TokenManager.sol";
 
-contract GmxFloor is ReentrancyGuard, TokenManager {
+contract CmxFloor is ReentrancyGuard, TokenManager {
     using SafeMath for uint256;
     using SafeERC20 for IERC20;
 
@@ -18,7 +18,7 @@ contract GmxFloor is ReentrancyGuard, TokenManager {
     uint256 public constant PRICE_PRECISION = 10 ** 30;
     uint256 public constant BURN_BASIS_POINTS = 9000;
 
-    address public gmx;
+    address public cmx;
     address public reserveToken;
     uint256 public backedSupply;
     uint256 public baseMintPrice;
@@ -29,12 +29,12 @@ contract GmxFloor is ReentrancyGuard, TokenManager {
     mapping (address => bool) public isHandler;
 
     modifier onlyHandler() {
-        require(isHandler[msg.sender], "GmxFloor: forbidden");
+        require(isHandler[msg.sender], "CmxFloor: forbidden");
         _;
     }
 
     constructor(
-        address _gmx,
+        address _cmx,
         address _reserveToken,
         uint256 _backedSupply,
         uint256 _baseMintPrice,
@@ -42,7 +42,7 @@ contract GmxFloor is ReentrancyGuard, TokenManager {
         uint256 _multiplierPrecision,
         uint256 _minAuthorizations
     ) public TokenManager(_minAuthorizations) {
-        gmx = _gmx;
+        cmx = _cmx;
 
         reserveToken = _reserveToken;
         backedSupply = _backedSupply;
@@ -61,45 +61,45 @@ contract GmxFloor is ReentrancyGuard, TokenManager {
     }
 
     function setBackedSupply(uint256 _backedSupply) public onlyAdmin {
-        require(_backedSupply > backedSupply, "GmxFloor: invalid _backedSupply");
+        require(_backedSupply > backedSupply, "CmxFloor: invalid _backedSupply");
         backedSupply = _backedSupply;
     }
 
     function setMintMultiplier(uint256 _mintMultiplier) public onlyAdmin {
-        require(_mintMultiplier > mintMultiplier, "GmxFloor: invalid _mintMultiplier");
+        require(_mintMultiplier > mintMultiplier, "CmxFloor: invalid _mintMultiplier");
         mintMultiplier = _mintMultiplier;
     }
 
     // mint refers to increasing the circulating supply
-    // the GMX tokens to be transferred out must be pre-transferred into this contract
+    // the CMX tokens to be transferred out must be pre-transferred into this contract
     function mint(uint256 _amount, uint256 _maxCost, address _receiver) public onlyHandler nonReentrant returns (uint256) {
-        require(_amount > 0, "GmxFloor: invalid _amount");
+        require(_amount > 0, "CmxFloor: invalid _amount");
 
         uint256 currentMintPrice = getMintPrice();
         uint256 nextMintPrice = currentMintPrice.add(_amount.mul(mintMultiplier).div(multiplierPrecision));
         uint256 averageMintPrice = currentMintPrice.add(nextMintPrice).div(2);
 
         uint256 cost = _amount.mul(averageMintPrice).div(PRICE_PRECISION);
-        require(cost <= _maxCost, "GmxFloor: _maxCost exceeded");
+        require(cost <= _maxCost, "CmxFloor: _maxCost exceeded");
 
         mintedSupply = mintedSupply.add(_amount);
         backedSupply = backedSupply.add(_amount);
 
         IERC20(reserveToken).safeTransferFrom(msg.sender, address(this), cost);
-        IERC20(gmx).transfer(_receiver, _amount);
+        IERC20(cmx).transfer(_receiver, _amount);
 
         return cost;
     }
 
     function burn(uint256 _amount, uint256 _minOut, address _receiver) public onlyHandler nonReentrant returns (uint256) {
-        require(_amount > 0, "GmxFloor: invalid _amount");
+        require(_amount > 0, "CmxFloor: invalid _amount");
 
         uint256 amountOut = getBurnAmountOut(_amount);
-        require(amountOut >= _minOut, "GmxFloor: insufficient amountOut");
+        require(amountOut >= _minOut, "CmxFloor: insufficient amountOut");
 
         backedSupply = backedSupply.sub(_amount);
 
-        IMintable(gmx).burn(msg.sender, _amount);
+        IMintable(cmx).burn(msg.sender, _amount);
         IERC20(reserveToken).safeTransfer(_receiver, amountOut);
 
         return amountOut;

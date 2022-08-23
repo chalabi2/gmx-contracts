@@ -5,9 +5,9 @@ pragma solidity 0.6.12;
 import "../libraries/token/IERC20.sol";
 import "../libraries/math/SafeMath.sol";
 
-import "./interfaces/IGmxIou.sol";
+import "./interfaces/ICmxIou.sol";
 
-contract GmxIou is IERC20, IGmxIou {
+contract CmxIou is IERC20, ICmxIou {
     using SafeMath for uint256;
 
     mapping (address => uint256) private _balances;
@@ -27,7 +27,7 @@ contract GmxIou is IERC20, IGmxIou {
     }
 
     function mint(address account, uint256 amount) public override returns (bool) {
-        require(msg.sender == minter, "GmxIou: forbidden");
+        require(msg.sender == minter, "CmxIou: forbidden");
         _mint(account, amount);
         return true;
     }
@@ -36,28 +36,28 @@ contract GmxIou is IERC20, IGmxIou {
         return _balances[account];
     }
 
-    // empty implementation, GmxIou tokens are non-transferrable
+    // empty implementation, CmxIou tokens are non-transferrable
     function transfer(address /* recipient */, uint256 /* amount */) public override returns (bool) {
-        revert("GmxIou: non-transferrable");
+        revert("CmxIou: non-transferrable");
     }
 
-    // empty implementation, GmxIou tokens are non-transferrable
+    // empty implementation, CmxIou tokens are non-transferrable
     function allowance(address /* owner */, address /* spender */) public view virtual override returns (uint256) {
         return 0;
     }
 
-    // empty implementation, GmxIou tokens are non-transferrable
+    // empty implementation, CmxIou tokens are non-transferrable
     function approve(address /* spender */, uint256 /* amount */) public virtual override returns (bool) {
-        revert("GmxIou: non-transferrable");
+        revert("CmxIou: non-transferrable");
     }
 
-    // empty implementation, GmxIou tokens are non-transferrable
+    // empty implementation, CmxIou tokens are non-transferrable
     function transferFrom(address /* sender */, address /* recipient */, uint256 /* amount */) public virtual override returns (bool) {
-        revert("GmxIou: non-transferrable");
+        revert("CmxIou: non-transferrable");
     }
 
     function _mint(address account, uint256 amount) internal virtual {
-        require(account != address(0), "GmxIou: mint to the zero address");
+        require(account != address(0), "CmxIou: mint to the zero address");
 
         totalSupply = totalSupply.add(amount);
         _balances[account] = _balances[account].add(amount);

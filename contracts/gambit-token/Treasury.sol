@@ -7,7 +7,7 @@ import "../libraries/token/IERC20.sol";
 import "../libraries/utils/ReentrancyGuard.sol";
 
 import "../amm/interfaces/IPancakeRouter.sol";
-import "./interfaces/IGMT.sol";
+import "./interfaces/ICMT.sol";
 import "../peripherals/interfaces/ITimelockTarget.sol";
 
 contract Treasury is ReentrancyGuard, ITimelockTarget {
@@ -20,13 +20,13 @@ contract Treasury is ReentrancyGuard, ITimelockTarget {
     bool public isSwapActive = true;
     bool public isLiquidityAdded = false;
 
-    address public gmt;
+    address public cmt;
     address public busd;
     address public router;
     address public fund;
 
-    uint256 public gmtPresalePrice;
-    uint256 public gmtListingPrice;
+    uint256 public cmtPresalePrice;
+    uint256 public cmtListingPrice;
     uint256 public busdSlotCap;
     uint256 public busdHardCap;
     uint256 public busdBasisPoints;
@@ -55,13 +55,13 @@ contract Treasury is ReentrancyGuard, ITimelockTarget {
         require(!isInitialized, "Treasury: already initialized");
         isInitialized = true;
 
-        gmt = _addresses[0];
+        cmt = _addresses[0];
         busd = _addresses[1];
         router = _addresses[2];
         fund = _addresses[3];
 
-        gmtPresalePrice = _values[0];
-        gmtListingPrice = _values[1];
+        cmtPresalePrice = _values[0];
+        cmtListingPrice = _values[1];
         busdSlotCap = _values[2];
         busdHardCap = _values[3];
         busdBasisPoints = _values[4];
@@ -119,9 +119,9 @@ contract Treasury is ReentrancyGuard, ITimelockTarget {
         uint256 busdAfter = IERC20(busd).balanceOf(address(this));
         require(busdAfter.sub(busdBefore) == _busdAmount, "Treasury: invalid transfer");
 
-        // send GMT
-        uint256 gmtAmount = _busdAmount.mul(PRECISION).div(gmtPresalePrice);
-        IERC20(gmt).transfer(account, gmtAmount);
+        // send CMT
+        uint256 cmtAmount = _busdAmount.mul(PRECISION).div(cmtPresalePrice);
+        IERC20(cmt).transfer(account, cmtAmount);
     }
 
     function addLiquidity() external onlyGov nonReentrant {
@@ -129,25 +129,25 @@ contract Treasury is ReentrancyGuard, ITimelockTarget {
         isLiquidityAdded = true;
 
         uint256 busdAmount = busdReceived.mul(busdBasisPoints).div(BASIS_POINTS_DIVISOR);
-        uint256 gmtAmount = busdAmount.mul(PRECISION).div(gmtListingPrice);
+        uint256 cmtAmount = busdAmount.mul(PRECISION).div(cmtListingPrice);
 
         IERC20(busd).approve(router, busdAmount);
-        IERC20(gmt).approve(router, gmtAmount);
+        IERC20(cmt).approve(router, cmtAmount);
 
-        IGMT(gmt).endMigration();
+        ICMT(cmt).endMigration();
 
         IPancakeRouter(router).addLiquidity(
             busd, // tokenA
-            gmt, // tokenB
+            cmt, // tokenB
             busdAmount, // amountADesired
-            gmtAmount, // amountBDesired
+            cmtAmount, // amountBDesired
             0, // amountAMin
             0, // amountBMin
             address(this), // to
             block.timestamp // deadline
         );
 
-        IGMT(gmt).beginMigration();
+        ICMT(cmt).beginMigration();
 
         uint256 fundAmount = busdReceived.sub(busdAmount);
         IERC20(busd).transfer(fund, fundAmount);

@@ -4,14 +4,14 @@ pragma solidity 0.6.12;
 
 import "../libraries/math/SafeMath.sol";
 import "../libraries/token/IERC20.sol";
-import "./interfaces/IGMT.sol";
+import "./interfaces/ICMT.sol";
 import "../peripherals/interfaces/ITimelockTarget.sol";
 
-contract GMT is IERC20, IGMT, ITimelockTarget {
+contract CMT is IERC20, ICMT, ITimelockTarget {
     using SafeMath for uint256;
 
-    string public constant name = "Gambit";
-    string public constant symbol = "GMT";
+    string public constant name = "Cantobit";
+    string public constant symbol = "CMT";
     uint8 public constant decimals = 18;
 
     uint256 public override totalSupply;
@@ -28,7 +28,7 @@ contract GMT is IERC20, IGMT, ITimelockTarget {
     // only checked when hasActiveMigration is true
     // this can be used to block the AMM pair as a recipient
     // and protect liquidity providers during a migration
-    // by disabling the selling of GMT
+    // by disabling the selling of CMT
     mapping (address => bool) public blockedRecipients;
 
     // only checked when hasActiveMigration is true
@@ -36,17 +36,17 @@ contract GMT is IERC20, IGMT, ITimelockTarget {
     // - only allowing tokens to be transferred by the distribution contract
     // during the initial distribution phase, this would prevent token buyers
     // from adding liquidity before the initial liquidity is seeded
-    // - only allowing removal of GMT liquidity and no other actions
+    // - only allowing removal of CMT liquidity and no other actions
     // during the migration phase
     mapping (address => bool) public allowedMsgSenders;
 
     modifier onlyGov() {
-        require(msg.sender == gov, "GMT: forbidden");
+        require(msg.sender == gov, "CMT: forbidden");
         _;
     }
 
     modifier onlyAdmin() {
-        require(admins[msg.sender], "GMT: forbidden");
+        require(admins[msg.sender], "CMT: forbidden");
         _;
     }
 
@@ -69,12 +69,12 @@ contract GMT is IERC20, IGMT, ITimelockTarget {
     }
 
     function setNextMigrationTime(uint256 _migrationTime) external onlyGov {
-        require(_migrationTime > migrationTime, "GMT: invalid _migrationTime");
+        require(_migrationTime > migrationTime, "CMT: invalid _migrationTime");
         migrationTime = _migrationTime;
     }
 
     function beginMigration() external override onlyAdmin {
-        require(block.timestamp > migrationTime, "GMT: migrationTime not yet passed");
+        require(block.timestamp > migrationTime, "CMT: migrationTime not yet passed");
         hasActiveMigration = true;
     }
 
@@ -122,29 +122,29 @@ contract GMT is IERC20, IGMT, ITimelockTarget {
     }
 
     function transferFrom(address _sender, address _recipient, uint256 _amount) external override returns (bool) {
-        uint256 nextAllowance = allowances[_sender][msg.sender].sub(_amount, "GMT: transfer amount exceeds allowance");
+        uint256 nextAllowance = allowances[_sender][msg.sender].sub(_amount, "CMT: transfer amount exceeds allowance");
         _approve(_sender, msg.sender, nextAllowance);
         _transfer(_sender, _recipient, _amount);
         return true;
     }
 
     function _transfer(address _sender, address _recipient, uint256 _amount) private {
-        require(_sender != address(0), "GMT: transfer from the zero address");
-        require(_recipient != address(0), "GMT: transfer to the zero address");
+        require(_sender != address(0), "CMT: transfer from the zero address");
+        require(_recipient != address(0), "CMT: transfer to the zero address");
 
         if (hasActiveMigration) {
-            require(allowedMsgSenders[msg.sender], "GMT: forbidden msg.sender");
-            require(!blockedRecipients[_recipient], "GMT: forbidden recipient");
+            require(allowedMsgSenders[msg.sender], "CMT: forbidden msg.sender");
+            require(!blockedRecipients[_recipient], "CMT: forbidden recipient");
         }
 
-        balances[_sender] = balances[_sender].sub(_amount, "GMT: transfer amount exceeds balance");
+        balances[_sender] = balances[_sender].sub(_amount, "CMT: transfer amount exceeds balance");
         balances[_recipient] = balances[_recipient].add(_amount);
 
         emit Transfer(_sender, _recipient,_amount);
     }
 
     function _mint(address _account, uint256 _amount) private {
-        require(_account != address(0), "GMT: mint to the zero address");
+        require(_account != address(0), "CMT: mint to the zero address");
 
         totalSupply = totalSupply.add(_amount);
         balances[_account] = balances[_account].add(_amount);
@@ -153,8 +153,8 @@ contract GMT is IERC20, IGMT, ITimelockTarget {
     }
 
     function _approve(address _owner, address _spender, uint256 _amount) private {
-        require(_owner != address(0), "GMT: approve from the zero address");
-        require(_spender != address(0), "GMT: approve to the zero address");
+        require(_owner != address(0), "CMT: approve from the zero address");
+        require(_spender != address(0), "CMT: approve to the zero address");
 
         allowances[_owner][_spender] = _amount;
 

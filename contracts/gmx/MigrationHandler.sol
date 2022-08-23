@@ -7,7 +7,7 @@ import "../libraries/token/IERC20.sol";
 import "../libraries/utils/ReentrancyGuard.sol";
 
 import "./interfaces/IAmmRouter.sol";
-import "./interfaces/IGmxMigrator.sol";
+import "./interfaces/ICmxMigrator.sol";
 import "../core/interfaces/IVault.sol";
 
 contract MigrationHandler is ReentrancyGuard {
@@ -23,8 +23,8 @@ contract MigrationHandler is ReentrancyGuard {
 
     address public vault;
 
-    address public gmt;
-    address public xgmt;
+    address public cmt;
+    address public xcmt;
     address public usdg;
     address public bnb;
     address public busd;
@@ -44,8 +44,8 @@ contract MigrationHandler is ReentrancyGuard {
         address _ammRouterV1,
         address _ammRouterV2,
         address _vault,
-        address _gmt,
-        address _xgmt,
+        address _cmt,
+        address _xcmt,
         address _usdg,
         address _bnb,
         address _busd
@@ -58,8 +58,8 @@ contract MigrationHandler is ReentrancyGuard {
 
         vault = _vault;
 
-        gmt = _gmt;
-        xgmt = _xgmt;
+        cmt = _cmt;
+        xcmt = _xcmt;
         usdg = _usdg;
         bnb = _bnb;
         busd = _busd;
@@ -96,42 +96,42 @@ contract MigrationHandler is ReentrancyGuard {
 
     function swap(
         address _migrator,
-        uint256 _gmtAmountForUsdg,
-        uint256 _xgmtAmountForUsdg,
-        uint256 _gmtAmountForBusd
+        uint256 _cmtAmountForUsdg,
+        uint256 _xcmtAmountForUsdg,
+        uint256 _cmtAmountForBusd
     ) external onlyAdmin nonReentrant {
         address[] memory path = new address[](2);
 
-        path[0] = gmt;
+        path[0] = cmt;
         path[1] = usdg;
-        IERC20(gmt).transferFrom(_migrator, address(this), _gmtAmountForUsdg);
-        IERC20(gmt).approve(ammRouterV2, _gmtAmountForUsdg);
+        IERC20(cmt).transferFrom(_migrator, address(this), _cmtAmountForUsdg);
+        IERC20(cmt).approve(ammRouterV2, _cmtAmountForUsdg);
         IAmmRouter(ammRouterV2).swapExactTokensForTokens(
-            _gmtAmountForUsdg,
+            _cmtAmountForUsdg,
             0,
             path,
             _migrator,
             block.timestamp
         );
 
-        path[0] = xgmt;
+        path[0] = xcmt;
         path[1] = usdg;
-        IERC20(xgmt).transferFrom(_migrator, address(this), _xgmtAmountForUsdg);
-        IERC20(xgmt).approve(ammRouterV2, _xgmtAmountForUsdg);
+        IERC20(xcmt).transferFrom(_migrator, address(this), _xcmtAmountForUsdg);
+        IERC20(xcmt).approve(ammRouterV2, _xcmtAmountForUsdg);
         IAmmRouter(ammRouterV2).swapExactTokensForTokens(
-            _xgmtAmountForUsdg,
+            _xcmtAmountForUsdg,
             0,
             path,
             _migrator,
             block.timestamp
         );
 
-        path[0] = gmt;
+        path[0] = cmt;
         path[1] = busd;
-        IERC20(gmt).transferFrom(_migrator, address(this), _gmtAmountForBusd);
-        IERC20(gmt).approve(ammRouterV1, _gmtAmountForBusd);
+        IERC20(cmt).transferFrom(_migrator, address(this), _cmtAmountForBusd);
+        IERC20(cmt).approve(ammRouterV1, _cmtAmountForBusd);
         IAmmRouter(ammRouterV1).swapExactTokensForTokens(
-            _gmtAmountForBusd,
+            _cmtAmountForBusd,
             0,
             path,
             _migrator,
@@ -145,9 +145,9 @@ contract MigrationHandler is ReentrancyGuard {
         address _token,
         uint256 _usdgAmount
     ) external onlyAdmin nonReentrant {
-        address iouToken = IGmxMigrator(_migrator).iouTokens(_token);
+        address iouToken = ICmxMigrator(_migrator).iouTokens(_token);
         uint256 iouBalance = IERC20(iouToken).balanceOf(_account);
-        uint256 iouTokenAmount = _usdgAmount.div(2); // each GMX is priced at $2
+        uint256 iouTokenAmount = _usdgAmount.div(2); // each CMX is priced at $2
 
         uint256 refunded = refundedAmounts[_account][iouToken];
         refundedAmounts[_account][iouToken] = refunded.add(iouTokenAmount);
